@@ -9,7 +9,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddDefaultConfiguration();
 builder.Services.AddHttpConfiguration();
 builder.Services.AddProblemDetails();
-builder.Services.AddApiVersioning();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddApiVersioning().AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 var app = builder.Build();
 
@@ -17,6 +22,17 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "OpenAPI v1");
+        c.RoutePrefix = string.Empty; // Opens Swagger UI at "/"
+    });
+
+    app.UseReDoc(c =>
+    {
+        c.SpecUrl("/openapi/v1.json");
+    });
 }
 
 //app.UseHttpsRedirection();
@@ -29,6 +45,7 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/getproducts", as
         return products;
     })
     .WithName("GetProducts")
-    .HasApiVersion(1.0);
+    .HasApiVersion(1.0)
+    .WithOpenApi();
 
 app.Run();
