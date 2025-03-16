@@ -1,3 +1,6 @@
+using CSharpApp.Api.Helper;
+using CSharpApp.Core.Settings;
+using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 
 var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
@@ -6,6 +9,8 @@ builder.Logging.ClearProviders().AddSerilog(logger);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.Configure<HttpClientSettings>(builder.Configuration.GetSection("appsettings"));
+builder.Services.Configure<RestApiSettings>(builder.Configuration.GetSection("appsettings"));
 builder.Services.AddDefaultConfiguration();
 builder.Services.AddHttpConfiguration();
 builder.Services.AddProblemDetails();
@@ -14,6 +19,18 @@ builder.Services.AddApiVersioning().AddApiExplorer(options =>
 {
     options.GroupNameFormat = "'v'VVV";
     options.SubstituteApiVersionInUrl = true;
+});
+builder.Services.AddHttpClient("HTTPClient", (serviceProvider, client) =>
+{
+    var httpClientSettings = serviceProvider.GetRequiredService<IOptions<HttpClientSettings>>().Value;
+    var restApiSettings = serviceProvider.GetRequiredService<IOptions<RestApiSettings>>().Value;
+    client.BaseAddress = new Uri(restApiSettings.BaseUrl!);
+
+}).SetHandlerLifetime(TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("HttpClientSettings:Lifetime")))
+    .AddPolicyHandler((serviceProvider, request) =>
+{
+    var settings = serviceProvider.GetRequiredService<IOptions<HttpClientSettings>>().Value;
+    return HttpClientHelper.GetRetryPolicy(settings.RetryCount, settings.SleepDuration);
 });
 
 var app = builder.Build();
@@ -26,7 +43,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/openapi/v1.json", "OpenAPI v1");
-        c.RoutePrefix = string.Empty; // Opens Swagger UI at "/"
+        c.RoutePrefix = string.Empty;
     });
 
     app.UseReDoc(c =>
