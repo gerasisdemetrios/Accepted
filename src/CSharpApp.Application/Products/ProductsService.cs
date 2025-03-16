@@ -6,14 +6,12 @@ public class ProductsService : IProductsService
     private readonly RestApiSettings _restApiSettings;
     private readonly ILogger<ProductsService> _logger;
 
-    public ProductsService(IOptions<RestApiSettings> restApiSettings, IHttpClientFactory httpClientFactory,
+    public ProductsService(IOptions<RestApiSettings> restApiSettings, HttpClient httpClient,
         ILogger<ProductsService> logger)
     {
         _restApiSettings = restApiSettings.Value;
         _logger = logger;
-
-        _httpClient = httpClientFactory.CreateClient("HTTPClient");
-        _httpClient.BaseAddress = new Uri(_restApiSettings.BaseUrl!);
+        _httpClient = httpClient;
     }
 
     public async Task<IReadOnlyCollection<Product>> GetProducts()

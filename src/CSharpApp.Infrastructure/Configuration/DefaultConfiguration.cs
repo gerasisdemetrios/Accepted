@@ -1,3 +1,5 @@
+using CSharpApp.Application.Communication;
+
 namespace CSharpApp.Infrastructure.Configuration;
 
 public static class DefaultConfiguration
@@ -11,7 +13,7 @@ public static class DefaultConfiguration
         services.Configure<HttpClientSettings>(configuration.GetSection(nameof(HttpClientSettings)));
 
         services.AddSingleton<IProductsService, ProductsService>();
-        
+
         return services;
     }
 }
