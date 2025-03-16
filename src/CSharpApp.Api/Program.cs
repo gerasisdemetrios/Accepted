@@ -4,8 +4,9 @@ using CSharpApp.Api.Helper;
 using CSharpApp.Application.Communication;
 using CSharpApp.Application.Products;
 using CSharpApp.Core.Settings;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.Net.Http.Headers;
+using Polly;
 var builder = WebApplication.CreateBuilder(args);
 
 var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
@@ -28,37 +29,18 @@ builder.Services.AddApiVersioning().AddApiExplorer(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
-builder.Services.AddHttpClient<IJwtTokenService, JwtTokenService>((serviceProvider, client) =>
-{
-    var httpClientSettings = serviceProvider.GetRequiredService<IOptions<HttpClientSettings>>().Value;
-    var restApiSettings = serviceProvider.GetRequiredService<IOptions<RestApiSettings>>().Value;
+var httpClientLifetime = TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("HttpClientSettings:Lifetime"));
 
-    client.BaseAddress = new Uri(restApiSettings.BaseUrl!);
+// Register JwtTokenService HttpClient
+builder.Services.AddHttpClient<IJwtTokenService, JwtTokenService>(HttpClientHelper.ConfigureHttpClient)
+    .SetHandlerLifetime(httpClientLifetime)
+    .AddPolicyHandler((serviceProvider, request) => HttpClientHelper.GetRetryPolicy(serviceProvider));
 
-
-})
-.SetHandlerLifetime(TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("HttpClientSettings:Lifetime")))
-    .AddPolicyHandler((serviceProvider, request) =>
-    {
-        var settings = serviceProvider.GetRequiredService<IOptions<HttpClientSettings>>().Value;
-        return HttpClientHelper.GetRetryPolicy(settings.RetryCount, settings.SleepDuration);
-    });
-
-builder.Services.AddHttpClient<IProductsService, ProductsService>((serviceProvider, client) =>
-{
-    var httpClientSettings = serviceProvider.GetRequiredService<IOptions<HttpClientSettings>>().Value;
-    var restApiSettings = serviceProvider.GetRequiredService<IOptions<RestApiSettings>>().Value;
-
-    client.BaseAddress = new Uri(restApiSettings.BaseUrl!);
-
-
-}).AddHttpMessageHandler<JwtAuthorizationHandler>()
-.SetHandlerLifetime(TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("HttpClientSettings:Lifetime")))
-    .AddPolicyHandler((serviceProvider, request) =>
-    {
-        var settings = serviceProvider.GetRequiredService<IOptions<HttpClientSettings>>().Value;
-        return HttpClientHelper.GetRetryPolicy(settings.RetryCount, settings.SleepDuration);
-    });
+// Register ProductsService HttpClient
+builder.Services.AddHttpClient<IProductsService, ProductsService>(HttpClientHelper.ConfigureHttpClient)
+    .AddHttpMessageHandler<JwtAuthorizationHandler>()
+    .SetHandlerLifetime(httpClientLifetime)
+    .AddPolicyHandler((serviceProvider, request) => HttpClientHelper.GetRetryPolicy(serviceProvider));
 
 var app = builder.Build();
 
@@ -89,6 +71,15 @@ versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async
         return products;
     })
     .WithName("Products")
+    .HasApiVersion(1.0)
+    .WithOpenApi();
+
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+{
+    var products = await productsService.GetProduct(id);
+    return products;
+})
+    .WithName("Product")
     .HasApiVersion(1.0)
     .WithOpenApi();
 
