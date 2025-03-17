@@ -4,13 +4,11 @@ public class CategoriesService : ICategoriesService
 {
     private readonly HttpClient _httpClient;
     private readonly RestApiSettings _restApiSettings;
-    private readonly ILogger<CategoriesService> _logger;
 
     public CategoriesService(IOptions<RestApiSettings> restApiSettings, HttpClient httpClient,
         ILogger<CategoriesService> logger)
     {
         _restApiSettings = restApiSettings.Value;
-        _logger = logger;
         _httpClient = httpClient;
     }
 

@@ -1,3 +1,5 @@
+using CSharpApp.Api.Middleware;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
@@ -43,6 +45,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseMiddleware<RequestTimingMiddleware>();
     app.MapOpenApi();
 
     app.UseSwaggerUI(c =>
