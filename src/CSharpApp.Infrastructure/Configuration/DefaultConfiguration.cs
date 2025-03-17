@@ -1,5 +1,3 @@
-using CSharpApp.Application.Communication;
-
 namespace CSharpApp.Infrastructure.Configuration;
 
 public static class DefaultConfiguration
@@ -11,8 +9,9 @@ public static class DefaultConfiguration
 
         services.Configure<RestApiSettings>(configuration!.GetSection(nameof(RestApiSettings)));
         services.Configure<HttpClientSettings>(configuration.GetSection(nameof(HttpClientSettings)));
-
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IProductsService, ProductsService>();
+        services.AddSingleton<ICategoriesService, CategoriesService>();
 
         return services;
     }

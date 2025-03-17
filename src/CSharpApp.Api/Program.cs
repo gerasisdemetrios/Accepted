@@ -1,12 +1,3 @@
-using Autofac.Core;
-using CSharpApp.Api.Handler;
-using CSharpApp.Api.Helper;
-using CSharpApp.Application.Communication;
-using CSharpApp.Application.Products;
-using CSharpApp.Core.Settings;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Polly;
 var builder = WebApplication.CreateBuilder(args);
 
 var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
@@ -17,7 +8,6 @@ builder.Logging.ClearProviders().AddSerilog(logger);
 builder.Services.AddOpenApi();
 builder.Services.Configure<HttpClientSettings>(builder.Configuration.GetSection("appsettings"));
 builder.Services.Configure<RestApiSettings>(builder.Configuration.GetSection("appsettings"));
-builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddTransient<JwtAuthorizationHandler>();
 builder.Services.AddDefaultConfiguration();
 builder.Services.AddHttpConfiguration();
@@ -38,6 +28,12 @@ builder.Services.AddHttpClient<IJwtTokenService, JwtTokenService>(HttpClientHelp
 
 // Register ProductsService HttpClient
 builder.Services.AddHttpClient<IProductsService, ProductsService>(HttpClientHelper.ConfigureHttpClient)
+    .AddHttpMessageHandler<JwtAuthorizationHandler>()
+    .SetHandlerLifetime(httpClientLifetime)
+    .AddPolicyHandler((serviceProvider, request) => HttpClientHelper.GetRetryPolicy(serviceProvider));
+
+// Register CategoriesService HttpClient
+builder.Services.AddHttpClient<ICategoriesService, CategoriesService>(HttpClientHelper.ConfigureHttpClient)
     .AddHttpMessageHandler<JwtAuthorizationHandler>()
     .SetHandlerLifetime(httpClientLifetime)
     .AddPolicyHandler((serviceProvider, request) => HttpClientHelper.GetRetryPolicy(serviceProvider));
@@ -65,22 +61,93 @@ if (app.Environment.IsDevelopment())
 
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
 
+#region Products
+
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
     {
         var products = await productsService.GetProducts();
-        return products;
-    })
-    .WithName("Products")
-    .HasApiVersion(1.0)
-    .WithOpenApi();
+        return Results.Ok(products);
+    }).WithName("GetProducts")
+ .HasApiVersion(1.0)
+ .WithOpenApi();
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
 {
-    var products = await productsService.GetProduct(id);
-    return products;
-})
-    .WithName("Product")
-    .HasApiVersion(1.0)
-    .WithOpenApi();
+    var product = await productsService.GetProduct(id);
+    return Results.Ok(product);
+}).WithName("GetProductById")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (Product product, IProductsService productsService) =>
+{
+    await productsService.CreateProduct(product);
+    return Results.NoContent();
+}).WithName("CreateProduct")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/products/{id:int}", async (int id, Product product, IProductsService productsService) =>
+{
+    await productsService.UpdateProduct(id, product);
+    return Results.NoContent();
+}).WithName("UpdateProduct")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+{
+    await productsService.DeleteProduct(id);
+    return Results.NoContent();
+}).WithName("DeleteProduct")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+#endregion
+
+#region Categories
+
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (ICategoriesService productsService) =>
+{
+    var categories = await productsService.GetCategories();
+    return Results.Ok(categories);
+}).WithName("GetCategories")
+ .HasApiVersion(1.0)
+ .WithOpenApi();
+
+
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+{
+    var category = await categoriesService.GetCategory(id);
+    return Results.Ok(category);
+}).WithName("GetContactById")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", async (Category category, ICategoriesService categoriesService) =>
+{
+    await categoriesService.CreateCategory(category);
+    return Results.NoContent();
+}).WithName("CreateCategory")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:int}", async (int id, Category category, ICategoriesService categoriesService) =>
+{
+    await categoriesService.UpdateCategory(id, category);
+    return Results.NoContent();
+}).WithName("UpdateCategory")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+{
+    await categoriesService.DeleteCategory(id);
+    return Results.NoContent();
+}).WithName("DeleteCategory")
+.HasApiVersion(1.0)
+.WithOpenApi();
+
+#endregion
 
 app.Run();

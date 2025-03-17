@@ -1,9 +1,4 @@
-﻿using System.Net.Http.Headers;
-using Polly.Retry;
-using System.Net;
-using Polly;
-
-namespace CSharpApp.Api.Handler
+﻿namespace CSharpApp.Api.Handler
 {
     public class JwtAuthorizationHandler : DelegatingHandler
     {

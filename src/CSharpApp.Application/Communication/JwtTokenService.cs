@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace CSharpApp.Application.Communication
+﻿namespace CSharpApp.Application.Communication
 {
     public class JwtTokenService : IJwtTokenService
     {
@@ -83,8 +81,8 @@ namespace CSharpApp.Application.Communication
             var content = await response.Content.ReadAsStringAsync();
             var res = JsonSerializer.Deserialize<AuthResponse>(content);
 
-            _accessToken = res.AccessToken;
-            _refreshToken = res.RefreshToken;
+            _accessToken = res?.AccessToken;
+            _refreshToken = res?.RefreshToken;
         }
     }
 }

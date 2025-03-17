@@ -1,9 +1,4 @@
-﻿using Polly.Extensions.Http;
-using Polly;
-using CSharpApp.Core.Settings;
-using Microsoft.Extensions.Options;
-
-namespace CSharpApp.Api.Helper
+﻿namespace CSharpApp.Api.Helper
 {
     public static class HttpClientHelper
     {
