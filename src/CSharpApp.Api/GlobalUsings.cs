@@ -17,3 +17,4 @@ global using System.Net.Http.Headers;
 global using Polly.Retry;
 global using System.Net;
 global using System.Diagnostics;
+global using System;

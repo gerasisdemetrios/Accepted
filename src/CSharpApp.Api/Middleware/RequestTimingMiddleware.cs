@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace CSharpApp.Api.Middleware
+﻿namespace CSharpApp.Api.Middleware
 {
     public class RequestTimingMiddleware
     {

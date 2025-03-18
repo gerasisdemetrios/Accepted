@@ -46,6 +46,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseMiddleware<RequestTimingMiddleware>();
+    app.UseMiddleware<ErrorHandlingMiddleware>();
     app.MapOpenApi();
 
     app.UseSwaggerUI(c =>
@@ -67,10 +68,10 @@ var versionedEndpointRouteBuilder = app.NewVersionedApi();
 #region Products
 
 versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
-    {
-        var products = await productsService.GetProducts();
-        return Results.Ok(products);
-    }).WithName("GetProducts")
+{
+    var products = await productsService.GetProducts();
+    return Results.Ok(products);
+}).WithName("GetProducts")
  .HasApiVersion(1.0)
  .WithOpenApi();
 
@@ -154,3 +155,5 @@ versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/categories/{i
 #endregion
 
 app.Run();
+
+public partial class Program { }

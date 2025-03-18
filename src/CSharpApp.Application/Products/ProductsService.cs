@@ -26,7 +26,7 @@ public class ProductsService : IProductsService
         var response = await _httpClient.GetAsync($"{_restApiSettings.Products}/{id}");
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
-        var res = JsonSerializer.Deserialize<Product>(content) ?? new Product();
+        var res = JsonSerializer.Deserialize<Product>(content);
         return res;
     }
 

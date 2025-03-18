@@ -27,7 +27,7 @@ public class CategoriesService : ICategoriesService
         var response = await _httpClient.GetAsync($"{_restApiSettings.Categories}/{id}");
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
-        var res = JsonSerializer.Deserialize<Category>(content) ?? new Category();
+        var res = JsonSerializer.Deserialize<Category>(content);
 
         return res;
     }
